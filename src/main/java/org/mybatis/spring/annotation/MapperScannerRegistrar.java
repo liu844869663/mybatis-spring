@@ -47,69 +47,77 @@ import org.springframework.util.StringUtils;
  */
 public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
 
-  private ResourceLoader resourceLoader;
+	private ResourceLoader resourceLoader;
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 
-    AnnotationAttributes annoAttrs = AnnotationAttributes.fromMap(importingClassMetadata.getAnnotationAttributes(MapperScan.class.getName()));
-    ClassPathMapperScanner scanner = new ClassPathMapperScanner(registry);
+		// <1> 获得 @MapperScan 注解信息
+		AnnotationAttributes annoAttrs = AnnotationAttributes
+				.fromMap(importingClassMetadata.getAnnotationAttributes(MapperScan.class.getName()));
+		// <2> 创建 ClassPathMapperScanner 对象
+		ClassPathMapperScanner scanner = new ClassPathMapperScanner(registry);
 
-    // this check is needed in Spring 3.1
-    if (resourceLoader != null) {
-      scanner.setResourceLoader(resourceLoader);
-    }
+		// this check is needed in Spring 3.1
+		// <3> 设置 resourceLoader 属性到 scanner 中
+		if (resourceLoader != null) {
+			scanner.setResourceLoader(resourceLoader);
+		}
 
-    Class<? extends Annotation> annotationClass = annoAttrs.getClass("annotationClass");
-    if (!Annotation.class.equals(annotationClass)) {
-      scanner.setAnnotationClass(annotationClass);
-    }
+		// <4> 获得 @MapperScan 注解上的属性，设置到 scanner 中
+		Class<? extends Annotation> annotationClass = annoAttrs.getClass("annotationClass");
+		if (!Annotation.class.equals(annotationClass)) {
+			scanner.setAnnotationClass(annotationClass);
+		}
 
-    Class<?> markerInterface = annoAttrs.getClass("markerInterface");
-    if (!Class.class.equals(markerInterface)) {
-      scanner.setMarkerInterface(markerInterface);
-    }
+		Class<?> markerInterface = annoAttrs.getClass("markerInterface");
+		if (!Class.class.equals(markerInterface)) {
+			scanner.setMarkerInterface(markerInterface);
+		}
 
-    Class<? extends BeanNameGenerator> generatorClass = annoAttrs.getClass("nameGenerator");
-    if (!BeanNameGenerator.class.equals(generatorClass)) {
-      scanner.setBeanNameGenerator(BeanUtils.instantiateClass(generatorClass));
-    }
+		Class<? extends BeanNameGenerator> generatorClass = annoAttrs.getClass("nameGenerator");
+		if (!BeanNameGenerator.class.equals(generatorClass)) {
+			scanner.setBeanNameGenerator(BeanUtils.instantiateClass(generatorClass));
+		}
 
-    Class<? extends MapperFactoryBean> mapperFactoryBeanClass = annoAttrs.getClass("factoryBean");
-    if (!MapperFactoryBean.class.equals(mapperFactoryBeanClass)) {
-      scanner.setMapperFactoryBean(BeanUtils.instantiateClass(mapperFactoryBeanClass));
-    }
+		Class<? extends MapperFactoryBean> mapperFactoryBeanClass = annoAttrs.getClass("factoryBean");
+		if (!MapperFactoryBean.class.equals(mapperFactoryBeanClass)) {
+			scanner.setMapperFactoryBean(BeanUtils.instantiateClass(mapperFactoryBeanClass));
+		}
 
-    scanner.setSqlSessionTemplateBeanName(annoAttrs.getString("sqlSessionTemplateRef"));
-    scanner.setSqlSessionFactoryBeanName(annoAttrs.getString("sqlSessionFactoryRef"));
+		scanner.setSqlSessionTemplateBeanName(annoAttrs.getString("sqlSessionTemplateRef"));
+		scanner.setSqlSessionFactoryBeanName(annoAttrs.getString("sqlSessionFactoryRef"));
 
-    List<String> basePackages = new ArrayList<String>();
-    for (String pkg : annoAttrs.getStringArray("value")) {
-      if (StringUtils.hasText(pkg)) {
-        basePackages.add(pkg);
-      }
-    }
-    for (String pkg : annoAttrs.getStringArray("basePackages")) {
-      if (StringUtils.hasText(pkg)) {
-        basePackages.add(pkg);
-      }
-    }
-    for (Class<?> clazz : annoAttrs.getClassArray("basePackageClasses")) {
-      basePackages.add(ClassUtils.getPackageName(clazz));
-    }
-    scanner.registerFilters();
-    scanner.doScan(StringUtils.toStringArray(basePackages));
-  }
+		// <4> 获得要扫描的包
+		List<String> basePackages = new ArrayList<String>();
+		for (String pkg : annoAttrs.getStringArray("value")) { // 包
+			if (StringUtils.hasText(pkg)) {
+				basePackages.add(pkg);
+			}
+		}
+		for (String pkg : annoAttrs.getStringArray("basePackages")) { // 包
+			if (StringUtils.hasText(pkg)) {
+				basePackages.add(pkg);
+			}
+		}
+		for (Class<?> clazz : annoAttrs.getClassArray("basePackageClasses")) { // 类
+			basePackages.add(ClassUtils.getPackageName(clazz));
+		}
+		// <5> 注册 scanner 的过滤器
+		scanner.registerFilters();
+		// <6> 执行扫描
+		scanner.doScan(StringUtils.toStringArray(basePackages));
+	}
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void setResourceLoader(ResourceLoader resourceLoader) {
-    this.resourceLoader = resourceLoader;
-  }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void setResourceLoader(ResourceLoader resourceLoader) {
+		this.resourceLoader = resourceLoader;
+	}
 
 }
