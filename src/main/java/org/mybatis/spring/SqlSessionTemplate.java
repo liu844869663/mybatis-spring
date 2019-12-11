@@ -457,8 +457,8 @@ public class SqlSessionTemplate implements SqlSession, DisposableBean {
 					// release the connection to avoid a deadlock if the translator is no loaded.
 					// See issue #22
 					// <4.2> 根据情况，关闭 SqlSession 对象
-	                // 如果非 Spring 托管的 SqlSession 对象，则关闭 SqlSession 对象
-	                // 如果是 Spring 托管的 SqlSession 对象，则减少其 SqlSessionHolder 的计数
+					// 如果非 Spring 托管的 SqlSession 对象，则关闭 SqlSession 对象
+					// 如果是 Spring 托管的 SqlSession 对象，则减少其 SqlSessionHolder 的计数
 					closeSqlSession(sqlSession, SqlSessionTemplate.this.sqlSessionFactory);
 					// <4.3> 置空，避免下面 final 又做处理
 					sqlSession = null;
@@ -472,8 +472,8 @@ public class SqlSessionTemplate implements SqlSession, DisposableBean {
 				throw unwrapped;
 			} finally {
 				// <5> 根据情况，关闭 SqlSession 对象
-	            // 如果非 Spring 托管的 SqlSession 对象，则关闭 SqlSession 对象
-	            // 如果是 Spring 托管的 SqlSession 对象，则减少其 SqlSessionHolder 的计数
+				// 如果非 Spring 托管的 SqlSession 对象，则关闭 SqlSession 对象
+				// 如果是 Spring 托管的 SqlSession 对象，则减少其 SqlSessionHolder 的计数
 				if (sqlSession != null) {
 					closeSqlSession(sqlSession, SqlSessionTemplate.this.sqlSessionFactory);
 				}

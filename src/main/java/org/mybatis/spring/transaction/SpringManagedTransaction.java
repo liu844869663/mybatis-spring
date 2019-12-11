@@ -31,11 +31,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 /**
  * {@code SpringManagedTransaction} handles the lifecycle of a JDBC connection.
- * It retrieves a connection from Spring's transaction manager and returns it back to it
- * when it is no longer needed.
+ * It retrieves a connection from Spring's transaction manager and returns it
+ * back to it when it is no longer needed.
  * <p>
- * If Spring's transaction handling is active it will no-op all commit/rollback/close calls
- * assuming that the Spring transaction manager will do the job.
+ * If Spring's transaction handling is active it will no-op all
+ * commit/rollback/close calls assuming that the Spring transaction manager will
+ * do the job.
  * <p>
  * If it is not it will behave like {@code JdbcTransaction}.
  *
@@ -44,99 +45,110 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  */
 public class SpringManagedTransaction implements Transaction {
 
-  private static final Log LOGGER = LogFactory.getLog(SpringManagedTransaction.class);
+	private static final Log LOGGER = LogFactory.getLog(SpringManagedTransaction.class);
 
-  private final DataSource dataSource;
+	/**
+	 * DataSource 对象
+	 */
+	private final DataSource dataSource;
 
-  private Connection connection;
+	/**
+	 * Connection 对象
+	 */
+	private Connection connection;
 
-  private boolean isConnectionTransactional;
+	/**
+	 * 当前连接是否处于事务中
+	 *
+	 * @see DataSourceUtils#isConnectionTransactional(Connection, DataSource)
+	 */
+	private boolean isConnectionTransactional;
 
-  private boolean autoCommit;
+	/**
+	 * 是否自动提交
+	 */
+	private boolean autoCommit;
 
-  public SpringManagedTransaction(DataSource dataSource) {
-    notNull(dataSource, "No DataSource specified");
-    this.dataSource = dataSource;
-  }
+	public SpringManagedTransaction(DataSource dataSource) {
+		notNull(dataSource, "No DataSource specified");
+		this.dataSource = dataSource;
+	}
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Connection getConnection() throws SQLException {
-    if (this.connection == null) {
-      openConnection();
-    }
-    return this.connection;
-  }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Connection getConnection() throws SQLException {
+		if (this.connection == null) {
+			openConnection();
+		}
+		return this.connection;
+	}
 
-  /**
-   * Gets a connection from Spring transaction manager and discovers if this
-   * {@code Transaction} should manage connection or let it to Spring.
-   * <p>
-   * It also reads autocommit setting because when using Spring Transaction MyBatis
-   * thinks that autocommit is always false and will always call commit/rollback
-   * so we need to no-op that calls.
-   */
-  private void openConnection() throws SQLException {
-    this.connection = DataSourceUtils.getConnection(this.dataSource);
-    this.autoCommit = this.connection.getAutoCommit();
-    this.isConnectionTransactional = DataSourceUtils.isConnectionTransactional(this.connection, this.dataSource);
+	/**
+	 * Gets a connection from Spring transaction manager and discovers if this
+	 * {@code Transaction} should manage connection or let it to Spring.
+	 * <p>
+	 * It also reads autocommit setting because when using Spring Transaction
+	 * MyBatis thinks that autocommit is always false and will always call
+	 * commit/rollback so we need to no-op that calls.
+	 */
+	private void openConnection() throws SQLException {
+		// 获得连接
+		this.connection = DataSourceUtils.getConnection(this.dataSource);
+		this.autoCommit = this.connection.getAutoCommit();
+		this.isConnectionTransactional = DataSourceUtils.isConnectionTransactional(this.connection, this.dataSource);
 
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "JDBC Connection ["
-              + this.connection
-              + "] will"
-              + (this.isConnectionTransactional ? " " : " not ")
-              + "be managed by Spring");
-    }
-  }
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("JDBC Connection [" + this.connection + "] will"
+					+ (this.isConnectionTransactional ? " " : " not ") + "be managed by Spring");
+		}
+	}
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void commit() throws SQLException {
-    if (this.connection != null && !this.isConnectionTransactional && !this.autoCommit) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Committing JDBC Connection [" + this.connection + "]");
-      }
-      this.connection.commit();
-    }
-  }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void commit() throws SQLException {
+		if (this.connection != null && !this.isConnectionTransactional && !this.autoCommit) {
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("Committing JDBC Connection [" + this.connection + "]");
+			}
+			this.connection.commit();
+		}
+	}
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void rollback() throws SQLException {
-    if (this.connection != null && !this.isConnectionTransactional && !this.autoCommit) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Rolling back JDBC Connection [" + this.connection + "]");
-      }
-      this.connection.rollback();
-    }
-  }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void rollback() throws SQLException {
+		if (this.connection != null && !this.isConnectionTransactional && !this.autoCommit) {
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("Rolling back JDBC Connection [" + this.connection + "]");
+			}
+			this.connection.rollback();
+		}
+	}
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void close() throws SQLException {
-    DataSourceUtils.releaseConnection(this.connection, this.dataSource);
-  }
-    
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Integer getTimeout() throws SQLException {
-    ConnectionHolder holder = (ConnectionHolder) TransactionSynchronizationManager.getResource(dataSource);
-    if (holder != null && holder.hasTimeout()) {
-      return holder.getTimeToLiveInSeconds();
-    } 
-    return null;
-  }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void close() throws SQLException {
+		DataSourceUtils.releaseConnection(this.connection, this.dataSource);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Integer getTimeout() throws SQLException {
+		ConnectionHolder holder = (ConnectionHolder) TransactionSynchronizationManager.getResource(dataSource);
+		if (holder != null && holder.hasTimeout()) {
+			return holder.getTimeToLiveInSeconds();
+		}
+		return null;
+	}
 
 }
