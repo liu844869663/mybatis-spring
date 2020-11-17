@@ -1,5 +1,5 @@
 /**
- * Copyright 2010-2019 the original author or authors.
+ * Copyright 2010-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,9 @@
  */
 package org.mybatis.spring.config;
 
-import java.lang.annotation.Annotation;
-
-import org.mybatis.spring.mapper.MapperFactoryBean;
+import org.mybatis.spring.annotation.MapperScannerRegistrar;
 import org.mybatis.spring.mapper.ClassPathMapperScanner;
+import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.mybatis.spring.mapper.MapperScannerConfigurer;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
@@ -31,9 +30,11 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 import org.w3c.dom.Element;
 
+import java.lang.annotation.Annotation;
+
 /**
  * A {#code BeanDefinitionParser} that handles the element scan of the MyBatis. namespace
- * 
+ *
  * @author Lishu Luo
  * @author Eduardo Macarron
  *
@@ -53,19 +54,27 @@ public class MapperScannerBeanDefinitionParser extends AbstractBeanDefinitionPar
   private static final String ATTRIBUTE_FACTORY_REF = "factory-ref";
   private static final String ATTRIBUTE_MAPPER_FACTORY_BEAN_CLASS = "mapper-factory-bean-class";
   private static final String ATTRIBUTE_LAZY_INITIALIZATION = "lazy-initialization";
+  private static final String ATTRIBUTE_DEFAULT_SCOPE = "default-scope";
 
   /**
+   * 这个方法和 {@link MapperScannerRegistrar} 一样的作用
+   * 解析 <mybatis:scan /> 标签中的配置信息，设置到 MapperScannerConfigurer 的 BeanDefinition 对象中
    * {@inheritDoc}
-   * 
+   *
    * @since 2.0.2
    */
   @Override
   protected AbstractBeanDefinition parseInternal(Element element, ParserContext parserContext) {
+    // 创建一个 BeanDefinition 构建器，用于构建 MapperScannerConfigurer 的 BeanDefinition 对象
     BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(MapperScannerConfigurer.class);
 
     ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
+    // 添加是否处理属性中的占位符属性
     builder.addPropertyValue("processPropertyPlaceHolders", true);
+    /*
+     * 解析 `scan` 标签中的配置，添加到 BeanDefinition 中
+     */
     try {
       String annotationClassName = element.getAttribute(ATTRIBUTE_ANNOTATION);
       if (StringUtils.hasText(annotationClassName)) {
@@ -100,6 +109,7 @@ public class MapperScannerBeanDefinitionParser extends AbstractBeanDefinitionPar
     builder.addPropertyValue("sqlSessionTemplateBeanName", element.getAttribute(ATTRIBUTE_TEMPLATE_REF));
     builder.addPropertyValue("sqlSessionFactoryBeanName", element.getAttribute(ATTRIBUTE_FACTORY_REF));
     builder.addPropertyValue("lazyInitialization", element.getAttribute(ATTRIBUTE_LAZY_INITIALIZATION));
+    builder.addPropertyValue("defaultScope", element.getAttribute(ATTRIBUTE_DEFAULT_SCOPE));
     builder.addPropertyValue("basePackage", element.getAttribute(ATTRIBUTE_BASE_PACKAGE));
 
     return builder.getBeanDefinition();
@@ -107,7 +117,7 @@ public class MapperScannerBeanDefinitionParser extends AbstractBeanDefinitionPar
 
   /**
    * {@inheritDoc}
-   * 
+   *
    * @since 2.0.2
    */
   @Override

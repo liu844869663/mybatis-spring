@@ -1,5 +1,5 @@
 /**
- * Copyright 2010-2019 the original author or authors.
+ * Copyright 2010-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 package org.mybatis.spring.mapper;
-
-import static org.springframework.util.Assert.notNull;
-
-import java.lang.annotation.Annotation;
-import java.util.Map;
-import java.util.Optional;
 
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionTemplate;
@@ -40,6 +34,12 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
+
+import java.lang.annotation.Annotation;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.springframework.util.Assert.notNull;
 
 /**
  * BeanDefinitionRegistryPostProcessor that searches recursively starting from a base package for interfaces and
@@ -91,8 +91,14 @@ import org.springframework.util.StringUtils;
 public class MapperScannerConfigurer
     implements BeanDefinitionRegistryPostProcessor, InitializingBean, ApplicationContextAware, BeanNameAware {
 
+  /**
+   * Mapper 接口的包路径
+   */
   private String basePackage;
 
+  /**
+   * 是否要将接口添加到 Configuration 全局配置对象中
+   */
   private boolean addToConfig = true;
 
   private String lazyInitialization;
@@ -118,6 +124,8 @@ public class MapperScannerConfigurer
   private boolean processPropertyPlaceHolders;
 
   private BeanNameGenerator nameGenerator;
+
+  private String defaultScope;
 
   /**
    * This property lets you set the base package for your mapper interface files.
@@ -191,7 +199,7 @@ public class MapperScannerConfigurer
    * Specifies which {@code SqlSessionTemplate} to use in the case that there is more than one in the spring context.
    * Usually this is only needed when you have more than one datasource.
    * <p>
-   * 
+   *
    * @deprecated Use {@link #setSqlSessionTemplateBeanName(String)} instead
    *
    * @param sqlSessionTemplate
@@ -222,7 +230,7 @@ public class MapperScannerConfigurer
    * Specifies which {@code SqlSessionFactory} to use in the case that there is more than one in the spring context.
    * Usually this is only needed when you have more than one datasource.
    * <p>
-   * 
+   *
    * @deprecated Use {@link #setSqlSessionFactoryBeanName(String)} instead.
    *
    * @param sqlSessionFactory
@@ -253,7 +261,7 @@ public class MapperScannerConfigurer
    * Specifies a flag that whether execute a property placeholder processing or not.
    * <p>
    * The default is {@literal false}. This means that a property placeholder processing does not execute.
-   * 
+   *
    * @since 1.1.1
    *
    * @param processPropertyPlaceHolders
@@ -312,6 +320,20 @@ public class MapperScannerConfigurer
   }
 
   /**
+   * Sets the default scope of scanned mappers.
+   * <p>
+   * Default is {@code null} (equiv to singleton).
+   * </p>
+   *
+   * @param defaultScope
+   *          the default scope
+   * @since 2.0.6
+   */
+  public void setDefaultScope(String defaultScope) {
+    this.defaultScope = defaultScope;
+  }
+
+  /**
    * {@inheritDoc}
    */
   @Override
@@ -328,22 +350,27 @@ public class MapperScannerConfigurer
   }
 
   /**
+   * 在 BeanDefinitionRegistry 完成后进行一些处理
    * {@inheritDoc}
-   * 
+   *
    * @since 1.0.2
    */
   @Override
   public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
     if (this.processPropertyPlaceHolders) {
+      // 处理属性中的占位符
       processPropertyPlaceHolders();
     }
 
+    // 创建一个 Bean 扫描器
     ClassPathMapperScanner scanner = new ClassPathMapperScanner(registry);
+    // 是否要将 Mapper 接口添加到 Configuration 全局配置对象中
     scanner.setAddToConfig(this.addToConfig);
     scanner.setAnnotationClass(this.annotationClass);
     scanner.setMarkerInterface(this.markerInterface);
     scanner.setSqlSessionFactory(this.sqlSessionFactory);
     scanner.setSqlSessionTemplate(this.sqlSessionTemplate);
+    // 设置 SqlSessionFactory 的 BeanName
     scanner.setSqlSessionFactoryBeanName(this.sqlSessionFactoryBeanName);
     scanner.setSqlSessionTemplateBeanName(this.sqlSessionTemplateBeanName);
     scanner.setResourceLoader(this.applicationContext);
@@ -352,9 +379,12 @@ public class MapperScannerConfigurer
     if (StringUtils.hasText(lazyInitialization)) {
       scanner.setLazyInitialization(Boolean.valueOf(lazyInitialization));
     }
+    if (StringUtils.hasText(defaultScope)) {
+      scanner.setDefaultScope(defaultScope);
+    }
+    // 添加几个过滤器
     scanner.registerFilters();
-    scanner.scan(
-        StringUtils.tokenizeToStringArray(this.basePackage, ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS));
+    scanner.scan(StringUtils.tokenizeToStringArray(this.basePackage, ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS));
   }
 
   /*
@@ -364,7 +394,8 @@ public class MapperScannerConfigurer
    * definition. Then update the values.
    */
   private void processPropertyPlaceHolders() {
-    Map<String, PropertyResourceConfigurer> prcs = applicationContext.getBeansOfType(PropertyResourceConfigurer.class);
+    Map<String, PropertyResourceConfigurer> prcs = applicationContext.getBeansOfType(PropertyResourceConfigurer.class,
+        false, false);
 
     if (!prcs.isEmpty() && applicationContext instanceof ConfigurableApplicationContext) {
       BeanDefinition mapperScannerBean = ((ConfigurableApplicationContext) applicationContext).getBeanFactory()
@@ -382,10 +413,11 @@ public class MapperScannerConfigurer
 
       PropertyValues values = mapperScannerBean.getPropertyValues();
 
-      this.basePackage = updatePropertyValue("basePackage", values);
-      this.sqlSessionFactoryBeanName = updatePropertyValue("sqlSessionFactoryBeanName", values);
-      this.sqlSessionTemplateBeanName = updatePropertyValue("sqlSessionTemplateBeanName", values);
-      this.lazyInitialization = updatePropertyValue("lazyInitialization", values);
+      this.basePackage = getPropertyValue("basePackage", values);
+      this.sqlSessionFactoryBeanName = getPropertyValue("sqlSessionFactoryBeanName", values);
+      this.sqlSessionTemplateBeanName = getPropertyValue("sqlSessionTemplateBeanName", values);
+      this.lazyInitialization = getPropertyValue("lazyInitialization", values);
+      this.defaultScope = getPropertyValue("defaultScope", values);
     }
     this.basePackage = Optional.ofNullable(this.basePackage).map(getEnvironment()::resolvePlaceholders).orElse(null);
     this.sqlSessionFactoryBeanName = Optional.ofNullable(this.sqlSessionFactoryBeanName)
@@ -394,13 +426,14 @@ public class MapperScannerConfigurer
         .map(getEnvironment()::resolvePlaceholders).orElse(null);
     this.lazyInitialization = Optional.ofNullable(this.lazyInitialization).map(getEnvironment()::resolvePlaceholders)
         .orElse(null);
+    this.defaultScope = Optional.ofNullable(this.defaultScope).map(getEnvironment()::resolvePlaceholders).orElse(null);
   }
 
   private Environment getEnvironment() {
     return this.applicationContext.getEnvironment();
   }
 
-  private String updatePropertyValue(String propertyName, PropertyValues values) {
+  private String getPropertyValue(String propertyName, PropertyValues values) {
     PropertyValue property = values.getPropertyValue(propertyName);
 
     if (property == null) {

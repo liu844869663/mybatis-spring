@@ -1,5 +1,5 @@
 /**
- * Copyright 2010-2019 the original author or authors.
+ * Copyright 2010-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
  */
 package org.mybatis.spring.support;
 
-import static org.springframework.util.Assert.notNull;
-
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
+import org.mybatis.spring.mapper.ClassPathMapperScanner;
 import org.springframework.dao.support.DaoSupport;
+
+import static org.springframework.util.Assert.notNull;
 
 /**
  * Convenient super class for MyBatis SqlSession data access objects. It gives you access to the template which can then
@@ -28,7 +30,7 @@ import org.springframework.dao.support.DaoSupport;
  * <p>
  * This class needs a SqlSessionTemplate or a SqlSessionFactory. If both are set the SqlSessionFactory will be ignored.
  * <p>
- * 
+ *
  * @author Putthiphong Boonphong
  * @author Eduardo Macarron
  *
@@ -41,11 +43,12 @@ public abstract class SqlSessionDaoSupport extends DaoSupport {
   private SqlSessionTemplate sqlSessionTemplate;
 
   /**
-   * Set MyBatis SqlSessionFactory to be used by this DAO. Will automatically create SqlSessionTemplate for the given
-   * SqlSessionFactory.
+   * Set MyBatis SqlSessionFactory to be used by this DAO. Will automatically create SqlSessionTemplate for the given SqlSessionFactory.
    *
-   * @param sqlSessionFactory
-   *          a factory of SqlSession
+   * 在 {@link ClassPathMapperScanner} 中生成的 MapperFactoryBean 对象设置了 sqlSessionFactory 属性
+   * 实际上对应 {@link SqlSessionFactoryBean} 对象，那么就要调用该方法将其转换成 SqlSessionTemplate 对象
+   *
+   * @param sqlSessionFactory a factory of SqlSession
    */
   public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
     if (this.sqlSessionTemplate == null || sqlSessionFactory != this.sqlSessionTemplate.getSqlSessionFactory()) {
@@ -59,7 +62,7 @@ public abstract class SqlSessionDaoSupport extends DaoSupport {
    * <p>
    * Can be overridden in subclasses to provide a SqlSessionTemplate instance with different configuration, or a custom
    * SqlSessionTemplate subclass.
-   * 
+   *
    * @param sqlSessionFactory
    *          the MyBatis SqlSessionFactory to create a SqlSessionTemplate for
    * @return the new SqlSessionTemplate instance

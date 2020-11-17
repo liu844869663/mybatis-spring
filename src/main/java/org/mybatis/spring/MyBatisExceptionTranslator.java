@@ -15,17 +15,16 @@
  */
 package org.mybatis.spring;
 
-import java.sql.SQLException;
-import java.util.function.Supplier;
-
-import javax.sql.DataSource;
-
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.support.PersistenceExceptionTranslator;
 import org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator;
 import org.springframework.jdbc.support.SQLExceptionTranslator;
 import org.springframework.transaction.TransactionException;
+
+import javax.sql.DataSource;
+import java.sql.SQLException;
+import java.util.function.Supplier;
 
 /**
  * Default exception translator.
@@ -65,7 +64,7 @@ public class MyBatisExceptionTranslator implements PersistenceExceptionTranslato
    * @since 2.0.3
    */
   public MyBatisExceptionTranslator(Supplier<SQLExceptionTranslator> exceptionTranslatorSupplier,
-      boolean exceptionTranslatorLazyInit) {
+                                    boolean exceptionTranslatorLazyInit) {
     this.exceptionTranslatorSupplier = exceptionTranslatorSupplier;
     if (!exceptionTranslatorLazyInit) {
       this.initExceptionTranslator();
@@ -77,18 +76,23 @@ public class MyBatisExceptionTranslator implements PersistenceExceptionTranslato
    */
   @Override
   public DataAccessException translateExceptionIfPossible(RuntimeException e) {
+    // 如果是 MyBatis 抛出的异常
     if (e instanceof PersistenceException) {
       // Batch exceptions come inside another PersistenceException
       // recursion has a risk of infinite loop so better make another if
       if (e.getCause() instanceof PersistenceException) {
         e = (PersistenceException) e.getCause();
       }
+      // 如果是 SQL 异常
       if (e.getCause() instanceof SQLException) {
+        // 初始化 SQLErrorCodeSQLExceptionTranslator
         this.initExceptionTranslator();
+        // 通过 SQLErrorCodeSQLExceptionTranslator 进行转换
         return this.exceptionTranslator.translate(e.getMessage() + "\n", null, (SQLException) e.getCause());
       } else if (e.getCause() instanceof TransactionException) {
         throw (TransactionException) e.getCause();
       }
+      // 返回 MyBatisSystemException 对象
       return new MyBatisSystemException(e);
     }
     return null;

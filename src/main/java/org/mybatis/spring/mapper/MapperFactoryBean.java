@@ -15,13 +15,13 @@
  */
 package org.mybatis.spring.mapper;
 
-import static org.springframework.util.Assert.notNull;
-
 import org.apache.ibatis.executor.ErrorContext;
 import org.apache.ibatis.session.Configuration;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.support.SqlSessionDaoSupport;
 import org.springframework.beans.factory.FactoryBean;
+
+import static org.springframework.util.Assert.notNull;
 
 /**
  * BeanFactory that enables injection of MyBatis mapper interfaces. It can be set up with a SqlSessionFactory or a
@@ -53,8 +53,14 @@ import org.springframework.beans.factory.FactoryBean;
  */
 public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements FactoryBean<T> {
 
+  /**
+   * Mapper 接口
+   */
   private Class<T> mapperInterface;
 
+  /**
+   * 是否添加到 {@link Configuration} 中，默认为 true
+   */
   private boolean addToConfig = true;
 
   public MapperFactoryBean() {
@@ -66,17 +72,25 @@ public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements Factor
   }
 
   /**
+   * 继承了 DaoSupport 接口，它实现了 InitializingBean 接口
+   * 则在 Spring 容器中初始化该 Bean 的 afterPropertiesSet() 方法，也就调用该方法
    * {@inheritDoc}
    */
   @Override
   protected void checkDaoConfig() {
+    // 校验 sqlSessionTemplate 非空
     super.checkDaoConfig();
 
+    // 校验 mapperInterface 非空
     notNull(this.mapperInterface, "Property 'mapperInterface' is required");
 
+    /*
+     * 如果该 Mapper 接口没有被解析至 Configuration，则对其进行解析
+     */
     Configuration configuration = getSqlSession().getConfiguration();
     if (this.addToConfig && !configuration.hasMapper(this.mapperInterface)) {
       try {
+        // 将该 Mapper 接口添加至 Configuration，会对该接口进行一系列的解析
         configuration.addMapper(this.mapperInterface);
       } catch (Exception e) {
         logger.error("Error while adding the mapper '" + this.mapperInterface + "' to configuration.", e);
@@ -88,10 +102,12 @@ public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements Factor
   }
 
   /**
+   * 在 Spring 容器中，注入当前 Bean 时调用该方法，也就是返回 Mapper 接口的动态代理对象（代理类为{@link org.apache.ibatis.binding.MapperProxy}）
    * {@inheritDoc}
    */
   @Override
   public T getObject() throws Exception {
+    // getSqlSession() 方法返回 SqlSessionTemplate 对象
     return getSqlSession().getMapper(this.mapperInterface);
   }
 
