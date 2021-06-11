@@ -11,6 +11,6 @@ Spring 整合 MyBatis 的源码分析
 
 当前 MyBatis-Spring 版本为 **2.0.3**
 
-该工程已经对 Spring 整合 MyBatis 的原理比较详细的源码注释与分析，对应的源码分析文章可查看我的博客园[**月圆吖**](https://www.cnblogs.com/lifullmoon)
+该工程已经对 Spring 整合 MyBatis 的实现进行了比较详细的源码注释与分析，对应的源码分析文章可查看我的博客园[**月圆吖**](https://www.cnblogs.com/lifullmoon)
 
 [《精尽 MyBatis 源码分析 - MyBatis-Spring 源码分析》](https://www.cnblogs.com/lifullmoon/p/14015235.html)
