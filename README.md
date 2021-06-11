@@ -1,4 +1,4 @@
-MyBatis Spring Adapter
+Spring 整合 MyBatis 的源码分析
 ======================
 
 [![Build Status](https://travis-ci.org/mybatis/spring.svg?branch=master)](https://travis-ci.org/mybatis/spring)
@@ -9,15 +9,8 @@ MyBatis Spring Adapter
 
 ![mybatis-spring](http://mybatis.github.io/images/mybatis-logo.png)
 
-MyBatis-Spring adapter is an easy-to-use Spring bridge for MyBatis sql mapping framework.
+当前 MyBatis-Spring 版本为 **2.0.3**
 
-Supported Versions
-------------------
+该工程已经对 Spring 整合 MyBatis 的原理比较详细的源码注释与分析，对应的源码分析文章可查看我的博客园[**月圆吖**](https://www.cnblogs.com/lifullmoon)
 
-- 1.3.x - Continued support for Java 6 and 7
-- master (2.0.x) - Support for Java 8, Spring 5, and Junit 5 plus other java 8 requirements
-
-Essentials
-----------
-
-* [See the docs](http://mybatis.github.io/spring/)
+[《精尽 MyBatis 源码分析 - MyBatis-Spring 源码分析》](https://www.cnblogs.com/lifullmoon/p/14015235.html)
